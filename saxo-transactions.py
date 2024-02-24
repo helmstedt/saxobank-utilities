@@ -185,3 +185,69 @@ if saxo_transactions.status_code == 200:
     saxo_transactions_json = saxo_transactions.json()
 else:
     print('Extracting your transactions failed for some reason. Sorry about that.')
+
+# Other example API calls
+# Create random string context_id
+context_id =  ''.join(secrets.choice(string.digits) for i in range(10))
+# Create reference id, add one to reference_id for each api call
+reference_id = 1
+
+# List accounts
+print('Getting list of accounts...')
+url = 'https://www.saxotrader.com/openapi/port/v1/accounts/subscriptions'
+json = {
+	"Arguments": {
+		"ClientKey": clientkey
+	},
+	"ContextId": context_id,
+	"ReferenceId": str(reference_id)
+}
+
+saxo_accounts = session.post(url, json=json)
+if saxo_accounts.status_code == 201:
+    print('Got your list of accounts')
+    saxo_accounts_json = saxo_accounts.json()
+
+    account_keys = []
+    for account in saxo_accounts_json['Snapshot']['Data']:
+        account_keys.append(account['AccountKey'])
+   
+    # Extract positions
+    print('Extracting account positions...')
+    url = 'https://www.saxotrader.com/openapi/port/v1/netpositions/subscriptions'
+    positions = []
+    for account_key in account_keys:
+        reference_id += 1
+        json = {
+            "Arguments": {
+                "ClientKey": clientkey,
+                "AccountKey": account_key,
+                "FieldGroups": [
+                    "NetPositionView",
+                    "NetPositionBase",
+                    "DisplayAndFormat",
+                    "ExchangeInfo",
+                    "Greeks",
+                    "SinglePosition",
+                    "SinglePositionBase",
+                    "SinglePositionView",
+                    "UnderlyingDisplayAndFormat"
+                ],
+                "PriceMode": None
+            },
+            "ContextId": context_id,
+            "ReferenceId": str(reference_id)
+        }
+        account_positions = session.post(url, json=json)
+        if account_positions.status_code == 201:
+            account_positions_json = account_positions.json()
+            positions.append(account_positions_json)
+            position_success = True
+        else:
+            print('Failed to get positions for at least one account. Sorry about that')
+            position_success = False
+            break
+    if position_success:
+        print('Looks like your positions were extracted. Edit the script to process your data.')
+else:
+    print('Failed to get your list of accounts. Sorry about that')
