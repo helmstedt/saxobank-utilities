@@ -120,6 +120,9 @@ step_three_json['callbacks'][2]['input'][0]['value'] = password
 step_four = session.post(login_url, json=step_three_json)
 step_four_json = step_four.json()
 
+if step_four_json['stage'] == 'retryCredentialsPage':
+    sys.exit('Error: Login failed, probably due to a wrong username/password combination. Please double check and try again.')
+
 # With an unknown device, the user is asked for a two factor login code
 if args.firstrun:
     print('As this is your first run, you must enter a two factor code from your phone.')
